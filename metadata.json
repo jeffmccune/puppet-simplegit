@@ -1,0 +1,15 @@
+{
+  "name": "jeffmccune-simplegit",
+  "version": "0.1.0",
+  "author": "jeffmccune",
+  "summary": "Simple git over SSH service for use with Code Manager",
+  "license": "Apache-2.0",
+  "source": "",
+  "project_page": null,
+  "issues_url": null,
+  "dependencies": [
+    {"name":"puppetlabs-stdlib","version_requirement":">= 1.0.0"}
+  ],
+  "data_provider": null
+}
+
