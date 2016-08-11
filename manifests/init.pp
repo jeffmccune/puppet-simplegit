@@ -1,48 +1,58 @@
 # Class: simplegit
 # ===========================
 #
-# Full description of class simplegit here.
+# This class configures a simple git service using SSH and intended to be used
+# in vagrant environments with Puppet Enterprise Code Manager.  The end goal is
+# the ability to git push a control repository and have that repositry
+# automatically available in a vagrant PE master.
 #
-# Parameters
-# ----------
-#
-# Document parameters here.
-#
-# * `sample parameter`
-# Explanation of what this parameter affects and what it defaults to.
-# e.g. "Specify one or more upstream ntp servers as an array."
-#
-# Variables
-# ----------
-#
-# Here you should define a list of variables that this module would require.
-#
-# * `sample variable`
-#  Explanation of how this variable affects the function of this class and if
-#  it has a default. e.g. "The parameter enc_ntp_servers must be set by the
-#  External Node Classifier as a comma separated list of hostnames." (Note,
-#  global variables should be avoided in favor of class parameters as
-#  of Puppet 2.6.)
-#
-# Examples
-# --------
-#
-# @example
-#    class { 'simplegit':
-#      servers => [ 'pool.ntp.org', 'ntp.local.company.com' ],
-#    }
-#
-# Authors
-# -------
-#
-# Author Name <author@domain.com>
-#
-# Copyright
-# ---------
-#
-# Copyright 2016 Your name here, unless otherwise noted.
-#
-class simplegit {
+# This module is meant to be run on a PE Monolithic Master.  It will configure
+# SSH keys as per: https://docs.puppet.com/pe/2016.2/code_mgr_config.html
+class simplegit (
+  $gituser = 'git',
+  $githome = '/var/lib/git',
+  $sshkey = '/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa',
+  $authorized_keys = [],
+) {
+  if $::osfamily != 'RedHat' {
+    fail("Not supported on ${::osfamily}")
+  }
 
+  Package {
+    ensure => present
+  }
+  File {
+    owner => 'git',
+    group => 'git',
+    mode  => '0600',
+  }
+  Service {
+    ensure => running,
+    enable => true,
+  }
 
+  package { 'git': }
+
+  user { "$gituser":
+    home    => "$githome",
+    require => File["$githome"],
+  }
+
+  file { "$githome":
+    ensure => directory,
+  }
+  file { "$githome/.ssh":
+    ensure => directory,
+  }
+  file { "$githome/.ssh/authorized_keys":
+    ensure => file,
+    mode   => '0644',
+  }
+  $authorized_keys.each |Integer $idx, String $pubkey| {
+    file_line { "$githome/.ssh/authorized_keys:$idx":
+      path    => "$githome/.ssh/authorized_keys",
+      line    => "$pubkey",
+      require => File["$githome/.ssh/authorized_keys"]
+    }
+  }
 }
