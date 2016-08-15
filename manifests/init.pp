@@ -30,6 +30,9 @@ class simplegit (
     ensure => running,
     enable => true,
   }
+  Exec {
+    path => ['/sbin', '/usr/sbin', '/bin', '/usr/bin']
+  }
 
   package { 'git': }
 
@@ -40,6 +43,10 @@ class simplegit (
 
   file { "$githome":
     ensure => directory,
+  }
+  file { "$githome/.bash_profile":
+    ensure  => file,
+    content => "PS1='[\u@\h \W]\$ '\n"
   }
   file { "$githome/.ssh":
     ensure => directory,
@@ -54,5 +61,22 @@ class simplegit (
       line    => "$pubkey",
       require => File["$githome/.ssh/authorized_keys"]
     }
+  }
+
+  # SELinux management, requires selinux module to manage the policytools
+  # pacakge providing the semanage command
+  exec { "semanage fcontext -a -t ssh_home_t $githome/.ssh":
+    unless => "ls -Z $githome/.ssh | grep ssh_home_t",
+    notify => Exec["restorecon -v $githome/.ssh"],
+  }
+  exec { "semanage fcontext -a -t ssh_home_t $githome/.ssh/authorized_keys":
+    unless => "ls -Z $githome/.ssh/authorized_keys | grep ssh_home_t",
+    notify => Exec["restorecon -v $githome/.ssh/authorized_keys"],
+  }
+  exec { "restorecon -v $githome/.ssh":
+    refreshonly => true,
+  }
+  exec { "restorecon -v $githome/.ssh/authorized_keys":
+    refreshonly => true,
   }
 }
